@@ -44,6 +44,7 @@ template <typename dist_t>
 void KNNQuery<dist_t>::Reset() {
   this->ResetStats();
   result_->Reset();
+  dist_comps = 0;
 }
 
 template <typename dist_t>

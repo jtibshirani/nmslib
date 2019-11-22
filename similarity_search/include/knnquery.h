@@ -49,6 +49,7 @@ class KNNQuery : public Query<dist_t> {
   bool Equals(const KNNQuery<dist_t>* query) const;
   void Print() const;
   static std::string Type() { return "K-NN"; }
+  int dist_comps;
 
  protected:
   unsigned K_;

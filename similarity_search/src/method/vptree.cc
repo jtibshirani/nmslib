@@ -44,7 +44,7 @@ using std::stringstream;
 using std::endl;
 using std::cout;
 using std::cerr;
-    
+
 template <typename dist_t, typename SearchOracle>
 VPTree<dist_t, SearchOracle>::VPTree(
                        bool  PrintProgress,
@@ -57,7 +57,7 @@ VPTree<dist_t, SearchOracle>::VPTree(
                               use_random_center_(use_random_center),
                               max_pivot_select_attempts_(MAX_PIVOT_SELECT_ATTEMPTS),
                               oracle_(space, data, PrintProgress),
-                              QueryTimeParams_(oracle_.GetQueryTimeParamNames()) { 
+                              QueryTimeParams_(oracle_.GetQueryTimeParamNames()) {
                                 QueryTimeParams_.push_back("maxLeavesToVisit");
                               }
 
@@ -83,13 +83,13 @@ void VPTree<dist_t, SearchOracle>::CreateIndex(const AnyParams& IndexParams) {
 
   this->ResetQueryTimeParams(); // reset query-time parameters
 
-  unique_ptr<ProgressDisplay>   progress_bar(PrintProgress_ ? 
+  unique_ptr<ProgressDisplay>   progress_bar(PrintProgress_ ?
                                               new ProgressDisplay(this->data_.size(), cerr):
                                               NULL);
 
   root_.reset(new VPNode(0,
-                     progress_bar.get(), 
-                     oracle_, 
+                     progress_bar.get(),
+                     oracle_,
                      space_, this->data_,
                      max_pivot_select_attempts_,
                      BucketSize_, ChunkBucket_,
@@ -122,8 +122,8 @@ void VPTree<dist_t, SearchOracle>::Search(KNNQuery<dist_t>* query, IdType) const
 }
 
 template <typename dist_t, typename SearchOracle>
-void VPTree<dist_t, SearchOracle>::VPNode::CreateBucket(bool ChunkBucket, 
-                                                        const ObjectVector& data, 
+void VPTree<dist_t, SearchOracle>::VPNode::CreateBucket(bool ChunkBucket,
+                                                        const ObjectVector& data,
                                                         ProgressDisplay* progress_bar) {
     if (ChunkBucket) {
       CreateCacheOptimizedBucket(data, CacheOptimizedBucket_, bucket_);
@@ -191,7 +191,7 @@ VPTree<dist_t, SearchOracle>::VPNode::VPNode(
 
     DistObjectPairVector<dist_t>& dp = dpARR[bestDP];
     DistObjectPair<dist_t>  medianDistObj = GetMedian(dp);
-    mediandist_ = medianDistObj.first; 
+    mediandist_ = medianDistObj.first;
 
     ObjectVector left;
     ObjectVector right;
@@ -199,7 +199,7 @@ VPTree<dist_t, SearchOracle>::VPNode::VPNode(
     for (auto it = dp.begin(); it != dp.end(); ++it) {
       const Object* v = it->second;
 
-      /* 
+      /*
        * Note that here we compare a pair (distance, pointer)
        * If distances are equal, pointers are compared.
        * Thus, we would get a balanced split, even if the median
@@ -260,6 +260,7 @@ void VPTree<dist_t, SearchOracle>::VPNode::GenericSearch(QueryType* query,
       const Object* Obj = (*bucket_)[i];
       dist_t distQC = query->DistanceObjLeft(Obj);
       query->CheckAndAddToResult(distQC, Obj);
+      query->dist_comps++;
     }
     return;
   }
@@ -267,13 +268,14 @@ void VPTree<dist_t, SearchOracle>::VPNode::GenericSearch(QueryType* query,
   // Distance can be asymmetric, the pivot is always the left argument (see the function that creates the node)!
   dist_t distQC = query->DistanceObjLeft(pivot_);
   query->CheckAndAddToResult(distQC, pivot_);
+  query->dist_comps++;
 
   if (distQC < mediandist_) {      // the query is inside
     // then first check inside
     if (left_child_ != NULL && oracle_.Classify(distQC, query->Radius(), mediandist_) != kVisitRight)
        left_child_->GenericSearch(query, MaxLeavesToVisit);
 
-    /* 
+    /*
      * After potentially visiting the left child, we need to reclassify the node,
      * because the query radius might have decreased.
      */
@@ -287,7 +289,7 @@ void VPTree<dist_t, SearchOracle>::VPNode::GenericSearch(QueryType* query,
     if (right_child_ != NULL && oracle_.Classify(distQC, query->Radius(), mediandist_) != kVisitLeft)
        right_child_->GenericSearch(query, MaxLeavesToVisit);
 
-    /* 
+    /*
      * After potentially visiting the left child, we need to reclassify the node,
      * because the query radius might have decreased.
      */
@@ -302,4 +304,3 @@ template class VPTree<float, PolynomialPruner<float> >;
 template class VPTree<int, PolynomialPruner<int> >;
 
 }   // namespace similarity
-

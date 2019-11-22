@@ -136,7 +136,8 @@ struct IndexWrapper {
       index->Search(&knn, -1);
     }
     std::unique_ptr<KNNQueue<dist_t>> res(knn.Result()->Clone());
-    return convertResult(res.get());
+    py::tuple result = convertResult(res.get());
+    return py::make_tuple(result[0], result[1], knn.dist_comps);
   }
 
   py::object knnQueryBatch(py::object input, size_t k, int num_threads) {

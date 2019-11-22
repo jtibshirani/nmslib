@@ -39,6 +39,7 @@ class RangeQuery : public Query<dist_t> {
   bool Equals(const RangeQuery<dist_t>* query) const;
   void Print() const;
   static std::string Type() { return "RANGE"; }
+  int dist_comps;
 
  private:
   dist_t               radius_;
